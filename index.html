@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head manifest="manifest.json">
+        <title>Websight</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
+        <link rel="canonical" href="https://websight.danruta.co.uk">
+        <meta name="keywords" content="WebSight, sobel, frei-chen, edge, detection, visually, impaired, accessibility, VR, virtual, reality, AR, augmented, reality, WebGL, shaders, WebVR">
+        <meta name="description" content="WebSight - Browser based real time VR video pass-through augmenting via WebGL shaders such as edge detection, to aid the visually impaired.">
+        <meta name="theme-color" content="#000000">
+        <link rel="manifest" href="./manifest.json">
+        <meta http-equiv="MSThemeCompatible">
+        <script src="dist/dependencies.min.js"></script>
+        <script id="vertexShaderSource" type="vertex">
+            varying vec2 vUv;
+
+            void main() {
+               vUv = uv;
+               gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+            }
+        </script>
+        <script src="dist/websight.min.js"></script>
+        <style>
+            body {
+                margin: 0;
+                overflow: hidden;
+                background-color: black;
+                color: #fff;
+                font-family: Arial, Helvetica, sans-serif;
+            }
+
+            .ui-container {
+                width: 100%;
+                position: fixed;
+            }
+
+            #controls {
+                max-width: 790px;
+                height: auto;
+                margin: 0 auto;
+                padding: 10px;
+
+                overflow-y: scroll;
+                max-height: 80vh;
+
+                background: rgba(255,255,255, 0.9);
+                border-radius: 3px;
+                font-size: 120%;
+
+                transform: translateY(-100%);
+                transition: transform 500ms ease;
+            }
+
+            #controls.open { transform: translateY(0); }
+
+            #controls .filters {
+                display: flex;
+                justify-content: center;
+                flex-flow: row nowrap;
+            }
+
+            #controls .filters > * {
+                margin: 5px;
+            }
+
+            #controls .sliders {
+                width: 100%;
+                display: flex;
+                flex-flow: row nowrap;
+                justify-content: space-around;
+                margin: 8px 0;
+            }
+
+            #controls input,
+            #controls button {
+                cursor: pointer;
+                text-align: center;
+            }
+
+            .toggle {
+                background-color: transparent;
+                width: 50px;
+                height: 50px;
+                padding: 5px;
+                border: 0;
+                outline: 0;
+                display: block;
+                position: absolute;
+                bottom: -50px;
+                left:50%;
+                top: 0;
+                margin-left:-25px;
+                transform: rotateX(0);
+                transition: transform 500ms ease;
+            }
+
+            #controls.open ~ .toggle {
+                top: auto;
+                transform: rotateX(180deg);
+            }
+
+            #enterVRButton {
+                position: absolute;
+                height: 60px;
+                width: 100px;
+                cursor: pointer;
+                background-image: url(./images/cardboard64.png);
+                background-size: cover;
+                background-repeat: no-repeat;
+                transition: transform 300ms ease;
+            }
+
+            #controls, button {
+                color: black;
+                font-weight: bold;
+            }
+            select {
+                font-weight: bold;
+            }
+            #enterVRButton, svg {
+                filter: drop-shadow(0 0 2px rgba(0, 0, 0, 1));
+            }
+            label[for="radius-slider"] {
+                display: flex;
+                align-items: center;
+            }
+
+            #enterVRButton.small {
+                transform: scale(0.7);
+            }
+
+            .filter-button {
+                min-width: 120px;
+                min-height: 50px;
+                font-size: 1.3em;
+                border: 0;
+                background: #bbb;
+                border-radius: 3px;
+            }
+
+            .filter-button:disabled {
+                background: none;
+            }
+
+            #controls .colours input {
+                height: 30px;
+                max-width: 90px;
+                margin: 0 10px;
+                font-size: 1.3em;
+            }
+
+            #controls .colours {
+                display: flex;
+                flex-flow: row nowrap;
+                justify-content: center;
+            }
+
+            #controls .colours > div {
+                flex-grow: 1;
+                width: 50%;
+                display: flex;
+                flex-flow: column nowrap;
+                justify-content: space-around;
+                margin: 0 10px;
+            }
+
+            #controls .colours .colour-checkboxes {
+                text-align: right;
+            }
+
+            #controls .colours label {
+                line-height: 20px;
+            }
+
+            #controls .colours input,
+            #controls .colours span {
+                vertical-align: middle;
+            }
+            #controls .colours span, input {
+                font-size: 110%;
+            }
+
+            #colourBlindness {
+                font-size: 1em;
+                margin: 10px;
+            }
+
+            img, audio {
+                display: none;
+            }
+
+            input[type="checkbox"] {
+                height: 20px;
+                width: 20px;
+            }
+
+            #aiSection {
+                display: none;
+            }
+
+            #aiSection > div {
+                display: flex;
+                justify-content: space-around;
+            }
+            #aiSection > div > div:first-child {
+                width: 20%;
+            }
+            #aiSection > div > label {
+                width: 20%;
+                display: flex;
+                align-items: center;
+                justify-content: space-around;
+            }
+            #aiSection > div > label > span {
+                width: 100%;
+                text-align: center;
+            }
+            #yoloSpinner {
+                width: 100%;
+                display: flex;
+                justify-content: center;
+            }
+            .spinner {
+                height: 25px;
+                width: 25px !important;
+                border: 5px solid rgba(0,0,0,0);
+                border-bottom: 5px solid black;
+                border-radius: 50%;
+                animation-name: spinner;
+                animation-duration: 1s;
+                animation-iteration-count: infinite;
+                animation-timing-function: linear;
+            }
+            @keyframes spinner{
+                from {transform: rotateZ(0deg)}
+                to {transform: rotateZ(360deg)}
+            }
+
+            input[type=checkbox] {
+                width: 25px !important;
+                height: 25px !important;
+                margin: 5px !important;
+                margin-left: 10px !important;
+                margin-right: 10px !important;
+            }
+
+        </style>
+    </head>
+    <body>
+        <img id="fire" src="images/fire_b.png">
+        <img id="noise" src="images/fire_e.png">
+        <audio id="audioElem" controls></audio>
+
+        <div class="ui-container">
+            <div id="enterVRButton"></div>
+            <div id="controls">
+                <div class="filters"></div>
+                <div class="sliders">
+                    <label for="radius-slider">Radius: <input type="range" id="radius-slider" min="0" max="100" step="1"> <span id="radius-value"></span></label>
+                    <label for="intensity-slider">Intensity: <input type="range" id="intensity-slider" min="0" max="100" step="1"> <span id="intensity-value"></span></label>
+                </div>
+
+                <div class="colours">
+                    <div class="colour-checkboxes">
+                        <label for="invertedCheckbox"><span>Inverted</span><input id="invertedCheckbox" type="checkbox"></label>
+                        <label for="reducedColoursCheckbox"><span>Reduced Colours</span><input id="reducedColoursCheckbox" type="checkbox"></label>
+                        <label for="surfaceCheckbox"><span>Surface Colours</span><input id="surfaceCheckbox" type="checkbox" checked></label>
+
+                        <label for="colourBlindness">
+                            <select id="colourBlindness">
+                                <option value="none">No colour blindness</option>
+                                <option value="protanopia">Protanopia</option>
+                                <option value="protanomaly">Protanomaly</option>
+                                <option value="deuteranopia">Deuteranopia</option>
+                                <option value="deuteranomaly">Deuteranomaly</option>
+                                <option value="tritanopia">Tritanopia</option>
+                                <option value="tritanomaly">Tritanomaly</option>
+                                <option value="achromatopsia">Achromatopsia</option>
+                                <option value="achromatomaly">Achromatomaly</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="colour-pickers">
+                        <label for="edge-picker"><input id="edge-picker" class="jscolor {onFineChange: 'updateColour(\'edge\', this)', valueElement: 'edge-picker'}" value="FFFFFF" readonly><span>Edge Colour</span></label>
+                        <label for="surface=picker"><input id="surface-picker" class="jscolor {onFineChange: 'updateColour(\'surface\', this)', valueElement: 'surface-picker'}" value="000000" readonly><span>Background Colour</span></label>
+                        <label for="surface=picker"><input id="ai-detection-checkbox" type="checkbox"><span>AI detection (experimental)</span></label>
+                    </div>
+                </div>
+
+                <span id="aiSection">
+                    <hr/>
+                    <div>
+                        <div>Interval (ms)</div>
+                        <input id="inferenceIntervalInput" type="number" value="500">
+                    </div>
+                    <div id="yoloSpinner">
+                        <div class="spinner"></div>
+                    </div>
+                </span>
+
+            </div>
+                <button class="toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 129 129">
+                        <g>
+                        <path d="m121.3,34.6c-1.6-1.6-4.2-1.6-5.8,0l-51,51.1-51.1-51.1c-1.6-1.6-4.2-1.6-5.8,0-1.6,1.6-1.6,4.2 0,5.8l53.9,53.9c0.8,0.8 1.8,1.2 2.9,1.2 1,0 2.1-0.4 2.9-1.2l53.9-53.9c1.7-1.6 1.7-4.2 0.1-5.8z" fill="#FFFFFF"/>
+                        </g>
+                    </svg>
+                </button>
+        </div>
+    </body>
+    <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/sw.js")
+            .then(function(reg){reg.active&&console.log("SW active")})
+            .catch(function(e){console.log("SW Error:",e)})
+        }
+    </script>
+</html>
